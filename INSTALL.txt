@@ -1,0 +1,100 @@
+
+Installation
+------------------------------------------------------------------:
+
+Python versions 2.5 or newer are supported. Might work with 2.4, but not 
+guaranteed.
+
+
+Issuing the following command will build and install the package as usual:
+
+    python setup.py install 
+
+
+Running Domo
+------------------------------------------------------------------:
+
+First create a database for domo, then you'll need to modify settings.py 
+in packages root according to your environment. 
+
+Installation process will create two scripts:
+
+    /usr/bin/domo_server.py 
+    /usr/bin/domo_client.py
+
+both scripts will output help strings when run without parameters, or with -h.
+
+Domo is written to provide a remote controlled web crawling system, that's why 
+it depends on profiles stored in table named ""profile"". But the crawler 
+might be used as standalone with given profile configuration.
+
+
+sample profile is as given below: 
+
+ {
+    "options": 
+    {
+        "cookies": ["/tmp/COOKIES"], 
+        "seeds": ["http://www.example.com"], 
+        "name": ["example"], 
+        "timeout": ["300"], 
+        "maxconnections": ["5"], 
+        "useragent": ["Mozilla/9.876 (X11; U; Linux 2.2.12-20 i686, en) Gecko/25250101)"], 
+        "connecttimeout": ["30"]
+    }, 
+    "plugins": 
+    {
+        "NotContainsFilter": [""], 
+        "StripPatternTransform": ["jsessionid=[\\w]*&?|sid=[\\w]*&?|\\(s\\([0-9a-z]+\\)\\)"], 
+        "DepthFilter": [""], 
+        "ContainsFilter": [""], 
+        "RegexFilter": [""], 
+        "DomainFilter": [".*example.com"]
+    }
+
+  }
+
+more documentation about filters/transformers/extractors are in relevant modules under interfaces directory.
+
+you can just run the crawler by instantiating it sa given below:
+
+    from domo.workers import Status, Report
+    from domo.workers.crawler import Crawler
+
+    configuration={'plugins':{
+        'DomainFilter': ['http://example.com'],
+        'HtmlExtractor': [],
+        'NoRepeatsFilter': [],
+        'StripPatternTransform': [r'ssubmit=[0-9\.]+'],
+    }, 
+
+        'options' :{
+            'name' : ['example'],
+            'seeds':['http://example.com'],
+            'connection_count':[10],
+            'encoding': ['utf-8']}
+    }
+
+    c = Crawler(configuration, status=Status(), report=Report())
+    try:
+        c.run()
+    except:
+        c.darc.close()
+        c.logger.error(c.container.done)
+
+
+Archiving 
+-------------------------------------------------------------:
+
+Domo stores the fetched data in its own storage unit named DArc (for Domo Arhive)
+which is an incremental gzipped file. You can just gunzip it to accessit's contents.
+
+Stored data is indexed for fast and accurate access later, for example to be used 
+as a wayback machine etc. Index is stored in database table named ""arcindex"" 
+
+
+Contributing and else
+-------------------------------------------------------------:
+
+If you'd like to contribute in any way such as documentation, bug fixes, enhancements,
+buy me a beer etc.. you're welcomed.  
