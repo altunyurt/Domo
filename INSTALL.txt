@@ -11,6 +11,7 @@ Issuing the following command will build and install the package as usual:
     python setup.py install 
 
 
+
 Running Domo
 ------------------------------------------------------------------:
 
@@ -83,6 +84,23 @@ you can just run the crawler by instantiating it sa given below:
         c.logger.error(c.container.done)
 
 
+normally domo is run as given below (assuming you have created profiles):
+
+ - first run the server 
+   
+   $ > domo_server.py debug # -h to see other parameters 
+
+ - then in another console, create a worker for a profile 
+
+   $ > domo_client.py -n localhost -c create -p profile_name 
+   2010-02-09 04:48:03,778 RunCommand   INFO     worker with name profile_name_20100209044803_nodename created
+
+ - start worker 
+   $ > domo_client.py -n localhost -c start -w profile_name_20100209044803_nodename
+
+ 
+
+
 Archiving 
 -------------------------------------------------------------:
 
@@ -98,3 +116,5 @@ Contributing and else
 
 If you'd like to contribute in any way such as documentation, bug fixes, enhancements,
 buy me a beer etc.. you're welcomed.  
+
+
