@@ -1,13 +1,21 @@
 # ~*~ coding:utf-8 ~*~
+
 from domo.plugins import registry
 from domo.utils import find
 from ctypes import Structure, c_uint32, c_char 
 from sets import Set
 from domo.interfaces.logger import get_logger
-from processing.sharedctypes import Value
+from multiprocessing.sharedctypes import Value
 
 
 class Report(object):
+    '''
+        Shared memory object between service controller (pyro daemon) and crawler object.
+        Stores and provides 3 informations:
+            done : number of urls fetched
+            todo : number of urls to be fetched 
+            failed : number of urls that fetching failed for some reason 
+    '''
     class __REPORT(Structure):
         _fields_ = (('done', c_uint32), ('todo', c_uint32), ('failed', c_uint32))
 
@@ -25,6 +33,10 @@ class Report(object):
                                                                        'failed')])
 
 class Status(object):
+    '''
+        Shared memory object between service controller (pyro daemon) and crawler object.
+        Stores and provides status information. 
+    '''
     _STATUS_ = {
         #'pending':'g',
         'paused': 'p',
@@ -36,10 +48,6 @@ class Status(object):
         _fields_ = (('status', c_char),)
 
     def __init__(self):
-        # doğrudan __Statuste hallediyorduk daha önce,
-        # ama sonra processing structure'dan türeyen classların 
-        # atributelarını almamaya başladı, o yüzden dandik bir wrapper yapmak
-        # yoluna gittim
         self.__status = Value(self.__STATUS, 'p')
 
     def set(self, st):
@@ -50,6 +58,13 @@ class Status(object):
             if val == self.__status.status:
                 return key
         return None
+
+
+""" TODO:
+    Report and Status might have been combined in a single object, 
+    i really do not remember why i chose this way. Upcoming versions 
+    will have a much better schema.
+"""
 
 class Worker(object):
 
@@ -63,10 +78,6 @@ class Worker(object):
         self.status = status
         self.config = config
 
-
-    # pluginler urlcontainer mevzuu için geçerli olmalı
-    # container class nerede olmalı nasıl olmalı bilemiyorum tabii
-        
     def run(self):
         raise Exception('subclasses MUST implement this method')
    

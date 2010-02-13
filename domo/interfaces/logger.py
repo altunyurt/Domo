@@ -7,6 +7,12 @@ import sys
 import traceback
 
 
+"""
+    TODO: logging should be much more clear
+"""
+
+
+
 class ConsoleHandler(logging.StreamHandler):
     """log to console for debugging"""
     def __init__(self):

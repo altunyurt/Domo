@@ -1,4 +1,5 @@
 # ~*~ coding:utf-8 ~*~
+
 from Pyro.core import ObjBase
 from datetime import datetime
 from domo.interfaces.logger import get_logger
@@ -12,7 +13,31 @@ import traceback
 from copy import copy
 import cjson
 
+
+''' TODO:
+
+    doctests required
+
+'''
+
+
 class WorkerService(ObjBase):
+    
+    '''
+        Worker manager object, providing the following methods for remote method invocation via 
+        Pyro. These methods are accessed by clients for managing the crawler instances. 
+
+        Methods return (Boolean, Message). Boolean indicates if the method worked as expected.
+        
+        True -> Successful execution 
+        False -> Failure
+
+        Message is the expected result of method, if method call was successful, otherwise contains 
+        error message in text format. 
+
+        TODO: find a better way of informing the client about success & failure. 
+
+    '''
 
     def __init__(self):
 
@@ -22,38 +47,58 @@ class WorkerService(ObjBase):
         self.workers = dict()
         self.logger = get_logger('WorkerService_%s' % getnodename())
         
-    #def create(self, options, plugins):
     def create(self, config):
         """ parse config and create relevant classess """
 
         self.logger.debug('Creating new worker') 
 
-        report = Report()                               # shared memory object: (done, todo)
-        status = Status()                               # shared objects are
-                                                        # used for simple
-                                                        # information exchange
+        report = Report()                               
+        status = Status()                              
+                                                      
+        """
+            configuration is stored in JSON format, in database. I chose JSON for 
+            - being able to store as text in database
+            - easily pass data between server and clients (web, console)
+            - i like cjson for no particular reason and i want to use it
+        
+        """
+        config = cjson.decode(config)                   
 
-        config = cjson.decode(config)               # convert configuration to dictionary
 
-        name = config.get('options').get('name')[0]             # will rewrite the name, ['name']
+        """
+            name string is rewritten as name_timestamp_nodename, to separate the job/worker 
+            easily from others when there are a lot of nodes running around. 
+            
+            Ah yes, forgot to tell. Domo provides a distributed job system, where a job is 
+            a crawling process. Codebase can easily be modified to provide another distributed 
+            somethingation system. Then you can control your remote nodes via a single client.
+
+            Thanks to wonderful Pyro framework.
+        
+        """
+        name = config.get('options').get('name')[0]             
         version = datetime.today().strftime('%Y%m%d%H%M%S')
         name = '%s_%s_%s' % (name, version, getnodename())
         config.get('options')['name'] = [name]
 
-        crawler = Crawler(config, report=report, status=status) # crawler instance created
+        crawler = Crawler(config, report=report, status=status)
                 
         if crawler is not None:
-            worker = Process(target=crawler.run, name=name)    # spawn a crawler process
 
-            # shared memory: node ayağı
+            """
+                Here spawning a crawler process. Multiprocess library makes controlling spawned 
+                processes as if they were threads, possible. 
+            """
+            worker = Process(target=crawler.run, name=name) 
+
+            # attach shared objects to worker
             worker.report = report
             worker.status = status
 
-            # workeri listeye ekle
             self.workers.update({name: worker})
             self.logger.info('Created new worker: %s with status %s' % (name,
                                                                         worker.status.get()))
-            # start the process, not the fetch job
+            # get worker ready for commands 
             worker.start()
             
             return (True, '%s' % name)
